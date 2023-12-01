@@ -1,0 +1,389 @@
+---
+title: "**A Statistical Analysis of US Income by Education Level, Gender, Race, and Age** \n \\vspace{0.25in}"
+header-includes:
+  - \usepackage{titling}
+  - \pretitle{\begin{center}\LARGE\includegraphics[width=6in]{/Users/thitruong/Desktop/Illinois Tech/Fall 2022/MATH 484/Project/sig-line-with-seal_600x260.png} \\[\bigskipamount]}
+  - \posttitle{\end{center}}
+subtitle: "MATH 484/564 -  Prof. Lulu Kang \\vspace{0.5in}"
+author: "Emily Piszczek and Thi Truong\n \\vspace{2.5in} "
+date: "12-02-2022"
+output: 
+    pdf_document: default
+    html_document: default
+fontsize: 11pt 
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE,
+               message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(fig.width=12, fig.height=8) 
+library(tinytex)
+library(lattice)
+library("readxl")
+```
+
+
+```{r}
+wkbk <- read_excel("/Users/thitruong/Desktop/Illinois Tech/Fall 2022/MATH 484/Project/CensusIncome.xlsx")
+
+X1 <- as.factor(wkbk$Age) #age
+X2 <- as.factor(wkbk$Gender) #gender
+X3 <- as.factor(wkbk$Education) #education
+X4 <- as.factor(wkbk$Race) #race
+X5 <- as.numeric(wkbk$n) 
+X6 <- as.numeric(wkbk$StandardError) #standard error
+Y <- as.numeric(wkbk$MeanEarning) #mean earning
+```
+
+\newpage
+# Abstract
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This project aims to better understand US income levels and its statistical relationship with earners’ education level, gender, race, and age. Data from the 2020 US Census (*Educational Attainment-People 18 Years Old and Over, by Total Money Earning, Work Experience, Age, Race, Hispanic Origin, and Sex*) was used to create a weighted multilinear regression model. The census data was presented in mean earnings by group, where each group consisted of a specified education level, gender, race, and age. Alongside the mean earning by group, the data provided by the census also included sample size and standard error per group, all of which were included to create the MLR model from dummy variables using R software. Additional R tools and plotting methods were used to further analyze the relationships among the independent and dependent variables. The model showed a significant relationship for mean salary earnings and majority of independent variables, but not all. Although relationships show some groups earn a higher mean salary than other groups, correlation does not imply causation. One glaring limitation to the data was lack of location, since mean salary expectations vary around the US. The MLR model was determined to be mostly significantly significant, though analysis of the model shows imperfections and room for improvement.
+
+
+# Introduction
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Pay equity in the US should result in salary earnings which reflect ability and experience, and should not discriminate based on gender or race. A statistical analysis is one way to examine if earnings are fair across different groupings of workers. It is also interesting to see how ability and experience, such as level of education, may impact salary earnings. This project examines demographic data taken from the 2020 US census to better understand how a few select variables impact salary earnings of full-time workers.
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Because the census data was taken from across the US, there is likely a skew in result interpretation based on: cost of living by city, population concentrations across cities, and demographics across cities. Therefore this data analysis is not expansive enough to conclude if discrimination is present in the salaries of the  US workforce. This project does not claim to draw such conclusions, but rather serve as a starting point for how age, gender, race, and education level may or may not impact expected earnings. The relationship between variables will be represented as a multilinear model. The analysis will include a variety of other statistical methodologies and models, and discuss their associated strengths and weaknesses.
+
+
+# Data Collection
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The primary source of data for this project was taken from the US Census Bureau’s “Current Population Survey, 2021 Annual Social and Economic Supplement.” The following values are based on adults who worked full time, year-round. The dependent variable being analyzed was the mean earnings for each grouping. Groupings consisted of the following four variables: education level, gender, race, and age. For this project, some of the categories were further simplified. For education level, only high school graduates (and GED), associate degree, and bachelor’s degree or more were considered. This project did not consider those who did not complete high school or those with only some college experience. For gender, only males and females were considered. For race, only Asian, Black, Hispanic, and White categories were considered. Finally, age was broken up into seven categories: 18-24, 25-34, 35-44, 45-54, 55-64, 65-74, and 75 and older. Below is an example of the sample size of Asian men (in the 1,000’s) and the corresponding tables of their mean earnings and standard error of mean [2]: 
+
+```{r, echo=FALSE, out.width="70%",fig.cap="Sample sizes of Asian Male",fig.align = "center"}
+knitr::include_graphics("/Users/thitruong/Desktop/Illinois Tech/Fall 2022/MATH 484/Project/sample_am.png")
+```
+
+
+```{r, echo=FALSE, out.width="70%" ,fig.cap="Mean Earnings of Asian Male",fig.align = "center"}
+knitr::include_graphics("/Users/thitruong/Desktop/Illinois Tech/Fall 2022/MATH 484/Project/meanEarning_am.png")
+```
+
+```{r, echo=FALSE, out.width="70%",fig.cap="Standard Error of Asian Male",fig.align = "center"}
+knitr::include_graphics("/Users/thitruong/Desktop/Illinois Tech/Fall 2022/MATH 484/Project/stderr_am.png")
+```
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data was pulled in the same way for men and women of each of the aforementioned races. Note that some categories have no mean earnings, because there was too small a sample size.
+
+
+# Methodology 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;In this project, only workers who worked full-time and year-round were considered. Because the census data was provided as a mean value per category, the independent variables were best represented by dummy variables to produce a multilinear regression model. A weighted least squares method was implemented because each category’s mean was created with a differing sample size. In addition to the final multilinear model, other R models and plotting software were used to further analyze the census data.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The following predictor variables were used for analysis:
+
+- $X_1$: The categories of age 
+
+- $X_2$: Gender
+
+- $X_3$: Education levels
+
+- $X_4$: Race
+
+- $Y$: Mean earnings
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Dummy variables were used to indicate the predictor variables, each of which were k-level quantitative variables. Dummy variables, a set of binary indicators, represented each of the independent variables. Since there were 7 age categories, 6 dummy variables (or “dv’s”) were needed. Similarly, gender required 1 “dv,” race required 3 “dv’s,” and education required 2 “dv’s.” The R function ‘as.factor()’ was used to implement each of these sets of variables. For example, race have 4-level, then it required 3 dummy variable equations:
+
+
+$$
+\begin{aligned}
+X_{41} &= \left\{
+  \begin{array}{ll}
+    1 &\mbox{, if person is Black} \\
+    0 &\mbox{, otherwise}
+  \end{array}
+\right.\\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+X_{42} &= \left\{
+  \begin{array}{ll}
+    1 &\mbox{, if person is Hispanic} \\
+    0 &\mbox{, otherwise}
+  \end{array}
+\right.\\
+\end{aligned}
+$$
+$$
+\begin{aligned}
+X_{43} &= \left\{
+  \begin{array}{ll}
+    1 &\mbox{, if person is White} \\
+    0 &\mbox{, otherwise}
+  \end{array}
+\right.\\
+\end{aligned}
+$$
+
+Thus, there are total 12 predictor variables in the model where each $X_{ij}$ represents the dummy variable with associated weighting
+
+$$
+\begin{aligned}
+X_{ij} &= \left\{
+  \begin{array}{ll}
+    1 &\mbox{, if "belong in a level"} \\
+    0 &\mbox{, otherwise}
+  \end{array}
+\right.\\
+\end{aligned}
+$$
+folloing as the below table:
+
+Age($X_1$)      | Gender($X_2$) | Education level ($X_3$)       | Race ($X_4$)      
+----------------|---------------|-------------------------------|-------------------
+$X_{11}$: 25-34 |$X_{21}$: Male |$X_{31}$: Bachelor's and more  |$X_{41}$: Black  
+$X_{12}$: 35-44 |               |$X_{32}$: High school          |$X_{42}$: Hispanic             
+$X_{13}$: 45-54 |               |                               |$X_{43}$: White
+$X_{14}$: 55-64 |               |                               |
+$X_{15}$: 65-74 |               |                               |
+$X_{16}$: 75&up |               |                               |
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Finally, the model was weighted using the standard error of mean. For each category’s mean earning, the census provided the standard error of mean. The full R model with beta coefficient values can be found in appendix C.
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MLR model: $Y=\beta_0+\beta_1X_{11}+\beta_2X_{12}+\beta_3X_{13}+\beta_4X_{14}+\beta_5X_{15}+\beta_6X_{16}+\beta_7X_{21}+\beta_8X_{31}+\beta_9X_{32}+\beta_{10}X_{41}+\beta_{11}X_{42}+\beta_{12}X_{43} + \epsilon$
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The model was then analyzed primarily with R visualization software, such as normal plots and Q-Q plots. Additionally, each independent variable was further analyzed by using SLR models and various R visualization tools. Finally, to better understand the relationships between the independent variables, further sources were utilized to show that correlation may not equate to causation. These additional sources are presented and discussed under the “Analysis and Results” section.
+
+
+# Data Analysis and Results
+
+1. Basic Visualization of Data
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Prior to creating the weighted single linear regression and multilinear regression models, dot plots were created to have a very basic visual representation of the raw data. In the below dot plots, each dot is one group which falls in that category. 
+
+
+```{r, fig.width = 5.5, fig.height = 3, fig.align = "center"}
+dotplot(X1~Y, data=wkbk,xlab="Mean Earnings",ylab="Age",main="Mean Earnings vs. Age Groups")
+```
+
+<div align="center">*Plot I: Mean Earnings vs. Age Groups*.</div>
+
+
+```{r, fig.width = 5.5, fig.height = 3, fig.align = "center"}
+dotplot(X2~Y, data=wkbk,xlab="Mean Earnings",ylab="Gender",main="Mean Earnings vs. Gender")
+```
+
+<div align="center">*Plot II: Mean Earnings vs. Gender*.</div>
+
+
+```{r, fig.width = 5.5, fig.height = 3, fig.align = "center"}
+dotplot(X3~Y, data=wkbk,xlab="Mean Earnings",ylab="Education",main="Mean Earnings vs. Education")
+```
+
+<div align="center">*Plot III: Mean Earnings vs. Education*.</div>
+
+```{r, fig.width = 5.5, fig.height = 3, fig.align = "center"}
+dotplot(X4~Y, data=wkbk,xlab="Mean Earnings",ylab="Races",main="Mean Earnings vs. Race")
+```
+
+<div align="center">*Plot IV: Mean Earnings vs. Race*.</div>
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It should be noted that, due to insufficient sample size in some groups, there is not an equal distribution of dots (groups) across all categories. For example, in Plot I the age “75 and up” category only has dots representing the following groups: {Male, High School, White}, {Male, Bachelor’s or more, White}, {Female, High School, White}, and {Female, Bachelors or more, White}. Another important note is that each dot (group) has a different sample size, which may alter the perception of the range of mean earnings in each of the plots.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;At a glance, several conclusions can be drawn. For the Plot I, it appears that mean salary has a much greater spread in older age groups compared to younger groups. Young people are concentrated in a low range, which is reasonable as they are early in their careers. From Plot II there appears to be a mean salary advantage for males. From plot III there is a limited mean salary range for those with only a high school level education where the highest group earns about 75k. For those with a Bachelor degree or higher, there’s a broad mean salary range from about 40k-150k. Plot III seems to show that education level has the strongest relationship with expected mean earnings since it has the most distinctive groupings per category. Finally, from Plot IV there appears to be similar mean salary ranges for Hispanic and Black categories, and somewhat similar mean salary ranges for White and Asian categories. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Overall from looking at these plots, the greatest ranges for mean earnings are for White race and male gender. Thus (depending on the standard error for each group) there may be a poor statistical significance for those variables. There will likely also be poor statistical significance for variables with few samples, such as age group “75 and up.”
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Finally, it was noticed that not all “independent” variables were actually independent of each other, as shown below in Table 2.
+
+Gender            | Female   |            |   Male  |
+------------------|----------|------------|---------|---------------
+Education Level   | n(1000's)|Distribution|n(1000's)| Distribution 
+------------------|----------|------------|---------|---------------
+High School       |10662     | 26%        | 71985   | 25%
+Associate         | 5933     |14%         |84501    | 29%
+Bachelor's or more|25125     |60%         |131398   | 46%
+
+Table: Independence of Gender and Education Level [2]
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For gender and education level to be independent variables from each other, it would be expected that the same distributions of females and males are present across levels of education. The same was also found for race and education. The lack of full independence will likely lead to a skew in interpretation of the impact gender, race, or education levels may have on mean salary earnings.
+
+2. Simple Linear Regression Analysis
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Included in the analysis are the single linear regression models for both gender vs mean salary, and education level vs mean salary. Respectively, those were the weakest and strongest relationships between independent and dependent variables. The below analysis will include why the “Education Model” is more statistically significant than the “Gender Model.”
+
+-  "Education Model" - the simple regression test the effects of mean earnings on education levels. The Education Model uses the associate level variable as the dummy variable. The simple linear regression (SLR) equation: $Y_{\mbox{edu}}=\beta_{0'}+\beta_{1'}X_{31}+\beta_{2'}X_{32} + \epsilon$
+
+```{r}
+fit_edu <- lm(Y~X3,data=wkbk)
+```
+
+After running SLR in R, we obtained the model: $\hat{Y}_{\mbox{edu}}=58148+33259X_{31}-12146X_{32}$, p-value < 2.2e-16, and $R^2$ = 0.5293.
+
+
+- "Gender Model" - the simple regression test the effects of mean earnings on gender. The Gender Model uses the female variable as the dummy variable (represented as the intercept). SLR equation: 
+$Y_{\mbox{gender}}=\beta_{0''}+\beta_{1''}X_{21} + \epsilon$
+
+```{r}
+fit_gender <- lm(Y~X2,data=wkbk)
+```
+
+After running SLR in R, we obtained the model: $Y_{\mbox{gender}}=57245+20180X_{21}$, p-value = 0.000166, and $R^2$ = 0.1225.
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The above SLR models use dummy variables. The Gender Model uses the female variable as the dummy variable (represented as the intercept), and the Education Model uses the associate level variable as the dummy variable. The Education Model appears to have a stronger reliability than the Gender model, since the P-value is smaller and the adjusted R-squared value is significantly larger. This would lead to reject the null hypothesis and conclude that there is strong evidence that a relationship between mean earnings and education. 
+
+ 
+
+```{r,fig.width = 8.5, fig.height = 4, fig.align = "center",fig.cap="Residuals vs. Fitted of Education Model and Gender Model"}
+par(mfrow=c(1,2))
+plot(fit_edu$fitted.values,fit_edu$residuals,xlab="Fitted values",ylab = "Residuals",main="Residuals vs. Fitted")
+plot(fit_gender$fitted.values,fit_gender$residuals,xlab="Fitted values",ylab = "Residuals",main="Residuals vs. Fitted")
+
+```
+
+
+In figure 4, for the Gender Model, females are the left grouping and males are on the right grouping. For the Education Model, from left to right is the high school, associates, and bachelors+ grouping. The Education Model seems to have a slightly better fit because the fitted residuals line is slightly flatter, indicating a distribution of residuals which more closely resembles the assumption of normality.
+
+
+
+```{r,fig.width = 8.5, fig.height = 4,fig.cap="Normal Q-Q of Education Model and Gender Model"}
+par(mfrow=c(1,2))
+qqnorm(residuals(fit_edu))
+qqline(residuals(fit_edu))
+qqnorm(residuals(fit_gender))
+qqline(residuals(fit_gender))
+```
+
+
+In Figure 5, the Normal Q-Q plot has a “S” shape and not following with residuals line; this indicates a lack of normality in the error. Overall, the residuals doesn't look to have a normal distribution.
+
+
+
+3. Multiple Linear Regression
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;As we mentioned in Methodology section, our model was implemented by using weighted least square method. Let $\sigma$ be standard errors obtained from the data, we can calculus weights as $w = \frac{1}{\sigma ^ 2}$. Using the R function '*fit.weighted <- lm(Y ~ X1+X2+X3+X4,data=wkbk,weights = w)*'.
+
+```{r}
+#considering standard error as weighted
+w <- 1 / X6^2
+
+#Weighted least squares regression
+fit.weighted <- lm(Y ~ X1+X2+X3+X4,data=wkbk,weights = w)
+```
+
+
+![Summary of MLR model](/Users/thitruong/Desktop/Illinois Tech/Fall 2022/MATH 484/Project/MLR.png){height=40%}
+
+We obtained the MLR model as below:
+$Y=41521+9902X_{11}+22006X_{12}+24940X_{13}+23570X_{14}+23191X_{15}+23306X_{16}+14151X_{21}+27619X_{31}-9307X_{32}-15141X_{41}-14903X_{42}-8264X_{43}$, p-value: < 2.2e-16, and $R^2$ = 0.8722.
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;From the MLR model created in R, the significance codes show lowest significance for the White group. This is to be expected from looking at Plot IV: Race vs Mean Earnings, since there is such a large range of mean salary earners amongst the White group. Also note that the standard error is highest for the age group ‘75 and up,’ which was also expected from Plot I: Age Groups vs Mean Earnings, since there are very few data points. From the large F-statistic and small p-value, it can be concluded that the MLR model is, overall, statistically significant. 
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Considering our ‘baseline’ for dummy variables are ‘age 18 to 24,’ female, associates level, and asian, the following explanation will say whether there is an expected increase or decrease in mean salary earnings when those variables change. Overall, there are significant and positive relationships between mean earnings and the following variables: all age groups except for age ‘75 and up,’ male, and bachelor’s or greater. There are significant and negative relationships between mean earnings and the following variables: high school level, Black group, and Hispanic group. No relationship can be concluded for age ‘75 and up’ or for White group.
+
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A residual plot was created to better understand if the MLR model follows the normal assumptions, and if the linear fit is the best fit. We designed the diagnostic plots for our model individually, but there is a function in R that allows us to create all of these plots at once. 
+
+
+```{r, fig.width = 9.5, fig.height = 4.5, fig.align = "center"}
+#summary(fit.weighted)
+par(mfcol=c(1,2))
+plot(fit.weighted)
+#anova(fit.weighted)
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Due to the curvature of the Residuals vs Fitted plot, it can be concluded that there’s a quadratic relationship between the independent variables and the mean income, meaning our linear assumption is not the best fit. Moving from left to right on the graph, there is a slightly greater spread of residuals which shows heteroskedasticity. Heteroskedasticity means that the variance of errors is not constant, which goes against one of the assumptions for our multilinear regression model.
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The Normal Q-Q plot has a slight “S” shape, with residuals dipping below and above the dotted line; this indicates a lack of normality in the error. The multilinear regression model assumes a normal distribution of error, so this graph shows that the model is also slightly imperfect, though not completely unreliable since most of the residuals fall on the line.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The p-value = 2.2e-16, the null hypothesis is rejected, so we can conclude that our model is more effective than a model only with the intercept since at least one coefficient is significantly different from 0. Further, R-square = 0.8722, our model is fitting the data quite well.
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;It must be noted that correlations may not provide true evidence of causation. For example, mean income level typically varies around the US by region and by size of city. Racial makeup of the US is also not evenly distributed and will vary by region. The below tables show just a few example cities, demonstrating how demographics and mean salary vary.
+
+
+Region          | Asian | Black | Hispanic | White | Population
+----------------|-------|-------|----------|-------|-------------
+USA Total       | 6.1%  | 13.6% |18.9%     | 59.3% | 331,449,281
+Atlanta, GA     | 4.8%  | 49.8% | 4.9%     | 38.0% | 498,602
+New York, NY    | 14.3% | 23.8% | 28.9%    | 31.9% | 8,804,190
+Seattle, WA     | 16.3% | 7.1%  | 7.1%     | 62.6% | 735,015
+Chicago, IL     | 6.8%  | 29.2% | 28.6%    | 33.3% | 2,747,231
+Des Moines, IA  | 6.5%  | 11.4% | 14.0%    | 64.6% | 214,137
+
+Table: Racial Demographic by City [1]
+
+
+City      | Weighted Mean | Weighted Median 
+----------|-------------- |-----------------
+Atlanta   | $76,387.48    | $63,028.90
+New York  | $85,387.63    | $80,955.84
+Chicago   | $66,614.71    | $49,539.49
+Seattle   | $75,010.09    | $74,631.17
+Des Moines| $55,084.19    | $50,556.51
+
+Table: Salary by City [3]
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For this case, the sample data may be more reliably interpreted if it was isolated within one region or city. To point out how the US-wide census may draw unreliable conclusions, note how both Chicago and New York have significantly different weighted mean salaries, yet have similar racial demographics. Meanwhile, Seattle and Atlanta have very similar mean salaries but vastly different racial demographics.
+
+
+# Conclusions
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The weighted MLR model was found to be statistically significant for 10 out of 12 dummy variables, with no significant relationship concluded for variables ‘age 75 and up’ or White group. The MLR model did not perfectly follow all MLR assumptions; residuals mostly followed a normal distribution though it was imperfect, it was noted that a quadratic relationship would likely provide a better fit than a linear model, and not all “independent” variables may have been independent from each other. Overall the model was determined to be statistically significant, but had room for improvement.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;From the model, it’s of course important to interpret the results for practical implementation. Does education level greatly impact salary expectations? Is there gender discrimination against certain genders or certain races? Unfortunately this project was not expansive enough to draw such conclusions. Racial demographics and mean salary vary significantly by region. Since population size of regions also vary, it may be easy to draw false conclusions from results. Even though racial and gender demographics show clear differences, there could also be further analysis for job type as well, perhaps more women are highly educated compared to men, but perhaps the education may fall in fields that result in lower demand or lower salaries. The lack of practical conclusions serve as a starting point for further research and statistical analysis to determine if discrimination is present. Variables would have to be further isolated to be better interpreted.
+
+
+\newpage
+# Appendix
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Appendix A**: Summary SLR of "Education Model"
+
+```{r}
+summary(fit_edu)
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Appendix B**: Summary SLR of "Gender Model"
+
+```{r}
+summary(fit_gender)
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Appendix C**: Multilinear model in R with associated coefficients.
+
+```{r}
+fit.weighted
+```
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Appendix D**: Summary of the MLR
+
+```{r}
+summary(fit.weighted)
+```
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**Appendix E**: ANOVA Table of the MLR
+
+```{r}
+anova(fit.weighted)
+```
+
+\newpage
+# References
+
+[1] US Census Bureau. (2021, April). U.S. Census Bureau quickfacts: Chicago City, Illinois. QuickFacts. Retrieved November 2022, from https://www.census.gov/quickfacts/chicagocityillinois 
+
+
+[2] US Census Bureau. (2020, November 15). PINC-04. educational attainment--people 18 years old and over, by total money earnings, work experience, age, race, Hispanic origin, and sex. Census.gov. Retrieved November 2020, from https://www.census.gov/data/tables/time-series/demo/income-poverty/cps-pinc/pinc-04.2020.html#list-tab-T5LKCZT8B1NNRPILCH 
+
+
+[3] Golden Oak Research Group. (2018, April 16). US household income statistics. Kaggle. Retrieved November 2022, from https://www.kaggle.com/datasets/goldenoakresearch/us-household-income-stats-geo-locations?resource=download 
+
+
+
